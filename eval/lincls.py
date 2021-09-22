@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Original file: https://github.com/facebookresearch/moco/blob/main/main_lincls.py
+# Some minor modification has been made to support customization in this repo
 import argparse
 import builtins
 import os
@@ -23,9 +25,6 @@ import torchvision.datasets as datasets
 from utils import build_model, get_eval_dataset
 from options import lincls_parser
 
-# for evaluating on different dataset. 
-# since there could be non-iid data, we should 
-# also support the confusion matrix visualization in this linear classification.
 num_classes_mapping = {
     'cifar10': 10,
     'cifar100': 100,
@@ -111,31 +110,10 @@ def main_worker(gpu, ngpus_per_node, args):
     if args.pretrained:
         if os.path.isfile(args.pretrained):
             print("=> loading checkpoint '{}'".format(args.pretrained))
-            checkpoint = torch.load(args.pretrained, map_location="cpu")
-
-            # rename pre-trained keys
-            state_dict = checkpoint
-            # for k in list(state_dict.keys()):
-            #     # retain only encoder_q up to before the embedding layer
-            #     if k.startswith('module.encoder_q') and not k.startswith('module.encoder_q.fc'):
-            #         # remove prefix
-            #         state_dict[k[len("module.encoder_q."):]] = state_dict[k]
-            #     # delete renamed or unused k
-            #     del state_dict[k]
-
-            # rename the raft pre-trained keys
-            # state_dict = checkpoint
-            # for k in list(state_dict.keys()):
-            #     # retain only encoder_q up to before the embedding layer
-            #     if k.startswith('online.module.'):
-            #         # remove prefix
-            #         state_dict[k[len("online.module."):]] = state_dict[k]
-            #     # delete renamed or unused k
-            #     del state_dict[k]
-
+            state_dict = torch.load(args.pretrained, map_location="cpu")
             args.start_epoch = 0
             msg = model.load_state_dict(state_dict, strict=False)
-            assert set(msg.missing_keys).issubset({"fc.weight", "fc.bias"}), msg.missing_keys
+            assert set(msg.missing_keys).issubset({"fc.weight", "fc.bias"}), msg.missing_keys   # different from MoCo repo.
 
             print("=> loaded pre-trained model '{}'".format(args.pretrained))
         else:

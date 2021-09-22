@@ -8,7 +8,7 @@ from torch.utils.data import DataLoader, Dataset
 import os
 import time
 import numpy as np
-from Flerd import Flerd
+from Flesd import Flesd
 import copy
 
 class DatasetSplit(Dataset):
@@ -261,6 +261,7 @@ def local_update_weights_infer_on_public(gpu, args, model, dataset, pubset, pubi
 
             model.zero_grad()
 
+            # amp to accelerate the computation and enlarge the batch size.
             with torch.cuda.amp.autocast(enabled=True):
                 q, k = nn.functional.normalize(model(x1), dim=1), nn.functional.normalize(model(x2), dim=1)
                 # adopted from the mocov2 code, not exactly SimCLR
@@ -289,7 +290,6 @@ def local_update_weights_infer_on_public(gpu, args, model, dataset, pubset, pubi
         epoch_loss.append(sum(batch_loss)/len(batch_loss))
 
     # infer on the public dataset.
-    # torch.cuda.empty_cache()
     model.eval()
     reps = []
     with torch.no_grad():
@@ -305,7 +305,10 @@ def local_update_weights_infer_on_public(gpu, args, model, dataset, pubset, pubi
 
 
 def global_update_ERD(gpu, args, model, pubset, pubidxs, reps, return_dict):
-    """Implementation of Ensemble Relational Distillation."""
+    """
+    Implementation of Ensemble Relational(Similarity) Distillation.
+    Here no augmentation is used, but original images. 
+    """
     # set the default cuda device. 
     # cannot set the default gpu
     # torch.cuda.set_device(gpu)
@@ -327,23 +330,23 @@ def global_update_ERD(gpu, args, model, pubset, pubidxs, reps, return_dict):
         # mat = mat / mat.sum(axis=1)
         return mat
 
-    sim_mats = [spike(com, args.flerd_targetT) for com in comms]
+    sim_mats = [spike(com, args.flesd_targetT) for com in comms]
     sim_mat = sum(sim_mats) / len(sim_mats)
 
     # print(sim_mat)
 
-    flerd_model = Flerd(
+    flesd_model = Flesd(
         model, 
-        K=args.flerd_K, 
-        m=args.flerd_m, 
-        T=args.flerd_T, 
+        K=args.flesd_K, 
+        m=args.flesd_m, 
+        T=args.flesd_T, 
         sim_mat=sim_mat, 
         dataset=args.dataset
     ).cuda(gpu)
 
     trainloader = DataLoader(
         DatasetSplitIdx(pubset, list(pubidxs)), 
-        batch_size=args.flerd_bs, 
+        batch_size=args.flesd_bs, 
         shuffle=True, 
         num_workers=args.num_workers, 
         drop_last=True
@@ -351,30 +354,30 @@ def global_update_ERD(gpu, args, model, pubset, pubidxs, reps, return_dict):
     # criterion = nn.CrossEntropyLoss().cuda()
 
     # Set mode to train model
-    flerd_model.train()
+    flesd_model.train()
     epoch_loss = []
 
     # Set optimizer for the local updates
-    if args.flerd_optimizer == 'sgd':
-        optimizer = torch.optim.SGD(flerd_model.parameters(), lr=args.flerd_lr,
+    if args.flesd_optimizer == 'sgd':
+        optimizer = torch.optim.SGD(flesd_model.parameters(), lr=args.flesd_lr,
                                     momentum=args.momentum)
-    elif args.flerd_optimizer == 'adam':
-        optimizer = torch.optim.Adam(flerd_model.parameters(), lr=args.flerd_lr,
+    elif args.flesd_optimizer == 'adam':
+        optimizer = torch.optim.Adam(flesd_model.parameters(), lr=args.flesd_lr,
                                         weight_decay=1e-6)
 
-    for iter in range(args.flerd_epochs):
+    for iter in range(args.flesd_epochs):
         batch_loss = []
         for i, (x, batch_idx) in enumerate(trainloader):
             x = x.cuda(gpu)
 
-            flerd_model.zero_grad()
+            flesd_model.zero_grad()
 
             # forward pass will automatically update the queue.
-            logits, labels, _, _ = flerd_model(x, x, batch_idx)
+            logits, labels, _, _ = flesd_model(x, x, batch_idx)
             labels = labels.cuda(gpu)
 
             # fill the queue first. 
-            if i < args.flerd_K // args.flerd_bs:
+            if i < args.flesd_K // args.flesd_bs:
                 continue
 
             # hard-label loss
@@ -401,16 +404,17 @@ def global_update_ERD(gpu, args, model, pubset, pubidxs, reps, return_dict):
 
     torch.cuda.empty_cache()
 
-    return_dict[gpu] = flerd_model.cpu().encoder_q.state_dict()
+    return_dict[gpu] = flesd_model.cpu().encoder_q.state_dict()
 
 def global_update_ERD_CL(gpu, args, model, pubset, pubidxs, reps, return_dict):
-    """Implementation of Ensemble Relational Distillation."""
-    # set the default cuda device. 
-    # cannot set the default gpu
-    # torch.cuda.set_device(gpu)
-
+    """
+    Implementation of Ensemble Relational(Similarity) Distillation.
+    Here we use augmenation and the contrastive loss as an auxiliary during distillation.
+    However, by default, the weight of contrastive learning loss is 0.
+    """
+    # Compute the target similarity matrix.
+    # by default the communication is sim-full.
     if args.communication.startswith('sim-full'):
-        print('kalalallalaal')
         comms = []
         for rep in reps:
             rep = nn.functional.normalize(rep)
@@ -419,11 +423,9 @@ def global_update_ERD_CL(gpu, args, model, pubset, pubidxs, reps, return_dict):
                 # (x - x.mean())/x.std(), clip(x), normalize first. 
                 mat = mat - mat.mean(axis=1, keepdims=True)
                 mat = mat / mat.max(axis=1, keepdims=True).values
-                print(mat)
 
-            comms.append(mat)  # delete the x-x similrarity 
+            comms.append(mat) 
     elif args.communication.startswith('sim-'):
-        print('dddddddddddddd')
         # sim-n: n% percent of the similarity is preserved.  
         percent = float(args.communication.split('-')[1])
         k = int(percent / 100 * reps[0].shape[0]) + 1 # self similarity is not counted as communication overhead, thus plus 1.
@@ -443,7 +445,7 @@ def global_update_ERD_CL(gpu, args, model, pubset, pubidxs, reps, return_dict):
             comms.append(mat)
 
     # exp(s/t) normalization to get the distribution. 
-    # this should be done globally, since then on the local batch, you can simply linearly scale the probability.
+    # this should be done globally, since then on the local batch, you can simply re-scale it to probability simplex.
     def normalize_sim(mat, tau):
         # prevent exp overflow.
         mat = mat - mat.max(axis=1, keepdims=True).values 
@@ -451,27 +453,23 @@ def global_update_ERD_CL(gpu, args, model, pubset, pubidxs, reps, return_dict):
         # mat = mat / mat.sum(axis=1)
         return mat
 
-    sim_mats = [normalize_sim(com, args.flerd_targetT) for com in comms]
+    # get the ensembled similarity matrix
+    sim_mats = [normalize_sim(com, args.flesd_targetT) for com in comms]
     sim_mat = sum(sim_mats) / len(sim_mats)
-    print(sim_mat)
-    # defualt is +inf. which means no re-smoothing.
-    # if np.abs(args.ensemble_smoothT) > 1e-6:
-    #     sim_mat = normalize_sim(sim_mat, args.ensemble_smoothT)
 
-    # print(sim_mat)
-
-    flerd_model = Flerd(
+    # build the model.
+    flesd_model = Flesd(
         model, 
-        K=args.flerd_K, 
-        m=args.flerd_m, 
-        T=args.flerd_T, 
+        K=args.flesd_K, 
+        m=args.flesd_m, 
+        T=args.flesd_T, 
         sim_mat=sim_mat, 
         dataset=args.dataset
     ).cuda(gpu)
 
     trainloader = DataLoader(
         DatasetSplitTwoCropsIdx(pubset, list(pubidxs)), 
-        batch_size=args.flerd_bs, 
+        batch_size=args.flesd_bs, 
         shuffle=True, 
         num_workers=args.num_workers, 
         drop_last=True
@@ -481,33 +479,34 @@ def global_update_ERD_CL(gpu, args, model, pubset, pubidxs, reps, return_dict):
     criterion = nn.CrossEntropyLoss().cuda(gpu)
 
     # Set mode to train model
-    flerd_model.train()
+    flesd_model.train()
     epoch_loss = []
 
     # Set optimizer for the local updates
-    if args.flerd_optimizer == 'sgd':
-        optimizer = torch.optim.SGD(flerd_model.parameters(), lr=args.flerd_lr,
+    if args.flesd_optimizer == 'sgd':
+        optimizer = torch.optim.SGD(flesd_model.parameters(), lr=args.flesd_lr,
                                     momentum=args.momentum)
-    elif args.flerd_optimizer == 'adam':
-        optimizer = torch.optim.Adam(flerd_model.parameters(), lr=args.flerd_lr,
-                                        weight_decay=args.flerd_wd)
+    elif args.flesd_optimizer == 'adam':
+        optimizer = torch.optim.Adam(flesd_model.parameters(), lr=args.flesd_lr,
+                                        weight_decay=args.flesd_wd)
 
     scaler = torch.cuda.amp.GradScaler(enabled=True)
 
-    for iter in range(args.flerd_epochs):
+    for iter in range(args.flesd_epochs):
         for i, (x1, x2, batch_idx) in enumerate(trainloader):
         # for i, dataterm in enumerate(trainloader):
             x1, x2 = x1.cuda(gpu, non_blocking=True), x2.cuda(gpu, non_blocking=True)
 
-            flerd_model.zero_grad()
+            flesd_model.zero_grad()
 
+            # amp acceleration.
             with torch.cuda.amp.autocast(enabled=True):
                 # forward pass will automatically update the queue.
-                logits, labels, q, k = flerd_model(x1, x2, batch_idx)
+                logits, labels, q, k = flesd_model(x1, x2, batch_idx)
                 labels = labels.cuda(gpu)
 
                 # fill the queue first. 
-                if i < args.flerd_K // args.flerd_bs:
+                if i < args.flesd_K // args.flesd_bs:
                     continue
 
                 # computational stability, logsumexp
@@ -532,13 +531,11 @@ def global_update_ERD_CL(gpu, args, model, pubset, pubidxs, reps, return_dict):
                 # labels: positive key indicators
                 cl_labels = torch.arange(cl_logits.shape[0], dtype=torch.long).cuda()
 
-                loss += args.flerd_cl_weight * criterion(cl_logits, cl_labels)
+                loss += args.flesd_cl_weight * criterion(cl_logits, cl_labels)
                 
             scaler.scale(loss).backward()
             scaler.step(optimizer)
             scaler.update()
-            # loss.backward()
-            # optimizer.step()
 
             if args.verbose and (i % 2 == 0):
                 print('| CL-ERD epoch : {} | [{}/{} ({:.0f}%)]\tLoss: {:.6f}'.format(
@@ -546,17 +543,15 @@ def global_update_ERD_CL(gpu, args, model, pubset, pubidxs, reps, return_dict):
                     len(trainloader.dataset),
                     100. * i / len(trainloader), loss.item()))
 
-        # only used for the flerd global. 
+        # only used for the flesd global. 
         if iter % 100 == 0:
             save_path = args.ckptdir 
             os.makedirs(save_path, exist_ok=True)
 
             local_path = os.path.join(save_path, f"global-ep{iter}.pth.tar")
-            torch.save(copy.deepcopy(flerd_model).cpu().encoder_q.state_dict(), local_path)
+            torch.save(copy.deepcopy(flesd_model).cpu().encoder_q.state_dict(), local_path)
 
-    # torch.cuda.empty_cache()
-
-    return_dict[gpu] = flerd_model.cpu().encoder_q.state_dict()
+    return_dict[gpu] = flesd_model.cpu().encoder_q.state_dict()
 
 ###############################################
 # Evaluation Helper Functions

@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # Copyright (c) Facebook, Inc. and its affiliates. All Rights Reserved
+# Original file: https://github.com/facebookresearch/moco/blob/main/main_lincls.py
+# Some minor modification has been made to support customization in this repo
 import argparse
 import builtins
 import os
@@ -19,7 +21,6 @@ import torch.utils.data
 import torch.utils.data.distributed
 import torchvision.transforms as transforms
 import torchvision.datasets as datasets
-# from torchvision.transforms.functional import InterpolationMode
 import models
 
 model_names = sorted(name for name in models.__dict__
@@ -184,7 +185,7 @@ def main_worker(gpu, ngpus_per_node, args):
             state_dict = torch.load(args.pretrained, map_location="cpu")
             args.start_epoch = 0
             msg = model.load_state_dict(state_dict, strict=False)
-            assert set(msg.missing_keys).issubset({"fc.1.weight", "fc.1.bias"}), msg.missing_keys
+            assert set(msg.missing_keys).issubset({"fc.1.weight", "fc.1.bias"}), msg.missing_keys # different from MoCo repo.
             print("=> loaded pre-trained model '{}'".format(args.pretrained))
         else:
             print("=> no checkpoint found at '{}'".format(args.pretrained))
@@ -253,7 +254,10 @@ def main_worker(gpu, ngpus_per_node, args):
 
     cudnn.benchmark = True
 
-    # different dataset loading code
+    ############################################
+    # different datasets loading
+    # support cifar10/cifar100/caltech101
+    ############################################
     normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406],
                                      std=[0.229, 0.224, 0.225])
     if args.dataset == 'cifar10':

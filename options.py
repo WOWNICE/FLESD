@@ -76,33 +76,33 @@ def args_parser():
     parser.add_argument('--mu', type=float, default=-1, 
                         help="fedprox setting. <0 disable and degenerate to fedavg.")
 
-    # flerd setting.
+    # flesd setting.
     parser.add_argument('--communication', type=str, default='sim-full', 
                         help="the communication result back to the main thread.")
-    parser.add_argument('--flerd-K', type=int, default=4096, 
+    parser.add_argument('--flesd-K', type=int, default=4096, 
                         help="queue size for RKD")
-    parser.add_argument('--flerd-m', type=float, default=0.999, 
-                        help="momentum encoder for Flerd.")
-    parser.add_argument('--flerd-T', type=float, default=0.07, 
-                        help="temperature for Flerd.")
-    parser.add_argument('--flerd-targetT', type=float, default=0.07, 
+    parser.add_argument('--flesd-m', type=float, default=0.999, 
+                        help="momentum encoder for flesd.")
+    parser.add_argument('--flesd-T', type=float, default=0.07, 
+                        help="temperature for flesd.")
+    parser.add_argument('--flesd-targetT', type=float, default=0.07, 
                         help="temperature before ensembling the similarity matrix.")
     parser.add_argument('--ensemble-smoothT', type=float, default=0, 
                         help="temperature after ensembling the similarity matrix.")
-    parser.add_argument('--flerd-epochs', type=int, default=200, 
+    parser.add_argument('--flesd-epochs', type=int, default=200, 
                         help="epochs of distillation")
-    parser.add_argument('--flerd-optimizer', type=str, default='adam', 
+    parser.add_argument('--flesd-optimizer', type=str, default='adam', 
                         help="the optimizer for adam.")
-    parser.add_argument('--flerd-lr', type=float, default=1e-3, 
+    parser.add_argument('--flesd-lr', type=float, default=1e-3, 
                         help="the ERD learning rate for the global network.")
-    parser.add_argument('--flerd-bs', type=int, default=256, 
+    parser.add_argument('--flesd-bs', type=int, default=256, 
                         help="the batch size of ensemble distillation")
-    parser.add_argument('--flerd-cl-weight', type=float, default=1., 
+    parser.add_argument('--flesd-cl-weight', type=float, default=1., 
                         help="how much the CL loss applies during distillation.")
-    parser.add_argument('--flerd-cl', action='store_true', 
+    parser.add_argument('--flesd-cl', action='store_true', 
                         help="whether contrastive learning")
-    parser.add_argument('--flerd-wd', type=float, default=1e-6, 
-                        help="flerd weight decay.")
+    parser.add_argument('--flesd-wd', type=float, default=1e-6, 
+                        help="flesd weight decay.")
     parser.add_argument('--pubset', type=str, default='', 
                         help="if not set, then use the client[0]'s data as the public dataset \
                         for global aggregation. use dataset_name.percentage to indicate which and what fraction the public dataset to use.")

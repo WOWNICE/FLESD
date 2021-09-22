@@ -16,7 +16,7 @@ from torch import nn
 
 from options import args_parser
 from update import local_update_weights_supervised
-from models import MLP, CNNMnist, CNNFashion_Mnist, CNNCifar, my_resnet18
+from models import my_resnet18, resnet50
 from utils import get_dataset, average_weights, exp_details
 
 from torch.multiprocessing import Process, Manager

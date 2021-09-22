@@ -125,33 +125,6 @@ def generate_noniid_inds(ind_file='./noniid.json', dataset_name='cifar10', data_
     with open(ind_file, 'w') as f:
         json.dump(inds_dist, f)
     
-    # visualize the dirichlet distribution 
-    # bubble_plot(num_distribution, f'./tmp/dirichlet-{dataset_name}-alpha{alpha}-client{client_num}.pdf')
-
-
-def bubble_plot(a, save_path):
-    """Visualizing the non-iid data distribution."""
-    if isinstance(a, list):
-        a = np.array(a, dtype=float)
-    a /= a.sum(axis=0, keepdims=True)
-
-    users, classes = a.shape
-
-    xs, ys, ss = [], [], []
-    for user in range(users):
-        for c in range(classes):
-            xs.append(user)
-            ys.append(c)
-            ss.append(a[user, c] * 2000) 
-
-    plt.clf()
-    plt.scatter(x=xs, y=ys, s=ss, c='red')
-    plt.xticks(range(users))
-    plt.yticks(range(classes))
-    plt.xlabel('Client IDs')
-    plt.ylabel('Class labels')
-    plt.savefig (save_path)
-    
 
 if __name__ == '__main__':
     for alpha in ['0.01', '0.1', '1', '10', '100']:

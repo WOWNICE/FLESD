@@ -49,24 +49,27 @@ python main.py \
     --flesd-cl --flesd-cl-weight 0
 ```
 the arguments of which represents:
-- communication: which type of similarity matrix to pass and aggregate, supporting:
+- `communication`: which type of similarity matrix to pass and aggregate, supporting:
     - sim-full: original similarity;
-    - sim-full-clip: normalize and clip the similarity matrixbefore ensembling (empirically not helpful, not shown in the paper);
+    - sim-full-clip: normalize and clip the similarity matrix before ensembling (empirically not helpful, not shown in the paper);
     - sim-\<n\>: \<n\>% of the top similarity values are kept during communication;
-- flesd-K: anchor set size (momentum queue size);
-- flesd-m: momentum factor $\zeta$;
-- flesd-T: student temperature;
-- flesd-targetT: temperature for ensembling similarity matrix;
-- flesd-epochs: epochs of Ensemble Similarity Distillation;
-- flesd-optimizer: optimizer used during distillation;
-- flesd-lr: learning rate during distillation;
-- flesd-cl: set to enable data augmentation during distillation;
-- flesd-cl-weight: weight of the contrastive loss in addition to similarity distillation loss.
+- `flesd-K`: anchor set size (momentum queue size);
+- `flesd-m`: momentum factor $\zeta$;
+- `flesd-T`: student temperature;
+- `flesd-targetT`: temperature for ensembling similarity matrix;
+- `flesd-epochs`: epochs of Ensemble Similarity Distillation;
+- `flesd-optimizer`: optimizer used during distillation;
+- `flesd-lr`: learning rate during distillation;
+- `flesd-cl`: set to enable data augmentation during distillation;
+- `flesd-cl-weight`: weight of the contrastive loss in addition to similarity distillation loss.
 
 ## Evaluation
 The linear evaluation is performed under the standard setting: fixing the backbone network, and train a new linear classifier. In this repo, we set all the networks for 60 epochs with SGD optmizer. 
 ```sh
-
+python eval.lincls <path/to/dataset> \
+    -a resnet18 --lr 3e-2 --batch-size 256 \
+    --pretrained <path/to/checkpoint/file> --gpu 0 \
+    --dataset cifar100 --epochs 60 --schedule 30 50
 ```
 ## License
 Since we developed some of our code based on MoCo repo, this project is under the CC-BY-NC 4.0 license, kept the same as MoCo.

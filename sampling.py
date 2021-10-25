@@ -7,12 +7,6 @@ import numpy as np
 from torchvision import datasets, transforms
 import json
 
-import matplotlib
-from matplotlib import pyplot as plt
-
-plt.style.use(['seaborn'])
-plt.rcParams['figure.figsize'] = (6.0, 6.75)
-
 
 def noniid(
         ind_file='./noniid.json', 

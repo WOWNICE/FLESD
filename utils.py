@@ -81,9 +81,8 @@ def get_dataset(args):
     the keys are the user index and the values are the corresponding data for
     each of those users.
     """
-
+    data_dir = args.data_dir
     if args.dataset == 'cifar10':
-        data_dir = '/raid/CIFAR'
         train_transform = transforms.Compose([
             transforms.RandomCrop(32, padding=4),
             transforms.RandomHorizontalFlip(),
@@ -100,7 +99,6 @@ def get_dataset(args):
         test_dataset = datasets.CIFAR10(data_dir, train=False, download=True,
                                       transform=apply_transform)
     elif args.dataset == 'cifar100':
-        data_dir = '/raid/CIFAR100'
         train_transform = transforms.Compose([
             transforms.RandomCrop(32, padding=4),
             transforms.RandomHorizontalFlip(),
@@ -117,7 +115,6 @@ def get_dataset(args):
         test_dataset = datasets.CIFAR100(data_dir, train=False, download=True,
                                       transform=apply_transform)
     elif args.dataset == 'imagenet100':
-        data_dir = '/raid/imagenet-100'
         apply_transform = transforms.Compose([
             transforms.Resize(256),
             transforms.CenterCrop(224),
@@ -129,7 +126,6 @@ def get_dataset(args):
         test_dataset = datasets.ImageFolder(os.path.join(data_dir, 'val'), transform=apply_transform)
 
     elif args.dataset == 'tiny-imagenet':
-        data_dir = '/raid/tiny-imagenet-200'
         apply_transform = transforms.Compose([
             transforms.ToTensor(), 
             normalize
@@ -155,9 +151,8 @@ def get_dataset_ssl(args):
     the keys are the user index and the values are the corresponding data for
     each of those users.
     """
-
+    data_dir = args.data_dir
     if args.dataset == 'cifar10':
-        data_dir = '/raid/CIFAR'
         apply_transform = transforms.Compose(
                 [transforms.ToTensor(),
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
@@ -170,7 +165,6 @@ def get_dataset_ssl(args):
         test_dataset = datasets.CIFAR10(data_dir, train=False, download=True,
                                       transform=apply_transform)
     if args.dataset == 'cifar100':
-        data_dir = '/raid/CIFAR100'
         apply_transform = transforms.Compose(
                 [transforms.ToTensor(),
                 transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))]
@@ -184,7 +178,6 @@ def get_dataset_ssl(args):
                                       transform=apply_transform)
 
     elif args.dataset == 'imagenet100':
-        data_dir = '/raid/imagenet-100'
         apply_transform = transforms.Compose([
             transforms.Resize(256),
             transforms.CenterCrop(224),
@@ -197,7 +190,6 @@ def get_dataset_ssl(args):
         test_dataset = datasets.ImageFolder(os.path.join(data_dir, 'val'), transform=apply_transform)
     
     elif args.dataset == 'tiny-imagenet':
-        data_dir = '/raid/tiny-imagenet-200'
         apply_transform = transforms.Compose([transforms.ToTensor(), normalize])
         ssl_transform = TwoCropsTransform(base_transform=tiny_imagenet_transform)
 

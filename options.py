@@ -55,6 +55,8 @@ def args_parser():
     # other arguments
     parser.add_argument('--dataset', type=str, default='mnist', help="name \
                         of dataset")
+    parser.add_argument('--data-dir', type=str, default='~/data/cifar10', help="name \
+                        of dataset")
     parser.add_argument('--mlp_dim', type=int, default=128, help="number \
                         of classes, originally. Now it's the mlp final dimension.")
     parser.add_argument('--gpu', default=None, help="To use cuda, set \

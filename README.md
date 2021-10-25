@@ -6,7 +6,7 @@ This repo is built upon the amazing code base of [federated learning](https://gi
 This repo runs under the pytorch automatic mixed precision and GPU support, so please make sure the version of pytorch >= 1.6.0 and proper cuda setup on your device. 
 
 ## Non-i.i.d-ness simulation
-We simulate the non-i.i.d distribution across different clients by applying dirichelet distribution. The indices of samples are stored in `noniid.json` and this part of code can be found in `sampling.py`. We provide our sampled data distribution in this repo for the sake of reproduction.
+We simulate the non-i.i.d distribution across different clients by applying dirichelet distribution. The indices of samples are stored in `noniid.json` and this part of code can be found in `sampling.py`. We provide our sampled data distribution in this repo for the sake of reproductivity.
 
 ## Baselines
 ### Local training
@@ -16,7 +16,8 @@ python fedavg_simclr.py \
     --epochs 1 --num_users 6 --frac 1. --local_ep 200 --local_bs 1024 --lr 1e-3 \
     --model resnet18 --dataset cifar10 --mlp_dim 128 --optimizer adam --verbose 1 \
     --dirichlet 0.01 --T 0.4 --ckptdir <path/to/checkpoint/directory> \
-    --local-save-freq 100 --gen-data-if-nonexist
+    --local-save-freq 100 --gen-data-if-nonexist \
+    --data-dir <path/to/data/directory>
 ```
 ### Federated baselines
 We benchmarked two federated baselines [FedAvg](https://arxiv.org/abs/1602.05629v2) and [FedProx](https://arxiv.org/abs/1812.06127) applied to self-supervised learning in the paper. Training FedAvg+SimCLR on CIFAR100, 6 clients, with direclet value  $\alpha=0.01$ for 200 epochs: 
@@ -25,7 +26,8 @@ python fedavg_simclr.py \
     --epochs 20 --num_users 6 --frac 1. --local_ep 10 --local_bs 1024 --lr 1e-3 \
     --model resnet18 --dataset cifar100 --mlp_dim 128 --optimizer adam --verbose 1 \
     --dirichlet 0.01 --T 0.4 --ckptdir <path/to/checkpoint/directory> \
-    --local-save-freq 0 --save-freq 1 --gen-data-if-nonexist
+    --local-save-freq 0 --save-freq 1 --gen-data-if-nonexist \
+    --data-dir <path/to/data/directory>
 ```
 If you want to train FedProx, specify the `mu` argument using the command above. The default $\mu$=1e-4 in the original paper.
 ```sh
@@ -33,7 +35,8 @@ python fedavg_simclr.py --mu 1e-4 \
     --epochs 20 --num_users 6 --frac 1. --local_ep 10 --local_bs 1024 --lr 1e-3 \
     --model resnet18 --dataset cifar100 --mlp_dim 128 --optimizer adam --verbose 1 \
     --dirichlet 0.01 --T 0.4 --ckptdir <path/to/checkpoint/directory> \
-    --local-save-freq 0 --save-freq 1 --gen-data-if-nonexist
+    --local-save-freq 0 --save-freq 1 --gen-data-if-nonexist \
+    --data-dir <path/to/data/directory>
 ```
 ## FLESD training
 The default training of FLESD:
@@ -46,7 +49,8 @@ python main.py \
     --flesd-K 2048 --flesd-m 0.999 --flesd-T 0.1 \
     --flesd-targetT 0.1 --flesd-epochs 200 \
     --flesd-optimizer adam --flesd-lr 1e-3 \
-    --flesd-cl --flesd-cl-weight 0
+    --flesd-cl --flesd-cl-weight 0 \
+    --data-dir <path/to/data/directory>
 ```
 the arguments of which represents:
 - `communication`: which type of similarity matrix to pass and aggregate, supporting:

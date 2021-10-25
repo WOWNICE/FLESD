@@ -66,7 +66,7 @@ class DatasetSplitTwoCropsIdx(Dataset):
 def local_update_weights(gpu, args, model, dataset, global_round, idxs, return_dict):
     """Use the SimCLR loss to train the model, which supports the fedprox training"""
     # set the default cuda device. 
-    torch.cuda.set_device(gpu)
+    torch.cuda.set_device(f'cuda:{gpu}')
     trainloader = DataLoader(DatasetSplit(dataset, list(idxs)), batch_size=args.local_bs, shuffle=True, num_workers=args.num_workers)
     criterion = nn.CrossEntropyLoss().cuda()
 
@@ -155,7 +155,7 @@ def local_update_weights(gpu, args, model, dataset, global_round, idxs, return_d
 def local_update_weights_supervised(gpu, args, model, dataset, testset, global_round, idxs, return_dict):
     """Supervised Learning Classification Loss."""
     # set the default cuda device. 
-    torch.cuda.set_device(gpu)
+    torch.cuda.set_device(f'cuda:{gpu}')
     trainloader = DataLoader(SupervisedDatasetSplit(dataset, list(idxs)), batch_size=args.local_bs, shuffle=True, num_workers=args.num_workers)
     testloader = DataLoader(testset, batch_size=args.local_bs, shuffle=False, num_workers=args.num_workers)
 

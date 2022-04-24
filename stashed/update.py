@@ -8,59 +8,8 @@ from torch.utils.data import DataLoader, Dataset
 import os
 import time
 import numpy as np
-from Flesd import Flesd
+from main.flesd import Flesd
 import copy
-
-class DatasetSplit(Dataset):
-    """An abstract Dataset class wrapped around Pytorch Dataset class.
-    """
-
-    def __init__(self, dataset, idxs):
-        self.dataset = dataset
-        self.idxs = [int(i) for i in idxs]
-
-    def __len__(self):
-        return len(self.idxs)
-
-    def __getitem__(self, item):
-        (x1, x2), label = self.dataset[self.idxs[item]]
-        return (x1, x2), torch.tensor(label)
-
-
-class SupervisedDatasetSplit(DatasetSplit):
-    """For supervised learning of fedavg."""
-    def __getitem__(self, item):
-        x, label = self.dataset[self.idxs[item]]
-        return x, torch.tensor(label)
-
-
-class DatasetSplitIdx(Dataset):
-    """An abstract Dataset class wrapped around Pytorch Dataset class.
-    """
-    def __init__(self, dataset, idxs):
-        self.dataset = dataset
-        self.idxs = [int(i) for i in idxs]
-
-    def __len__(self):
-        return len(self.idxs)
-
-    def __getitem__(self, item):
-        x, label = self.dataset[self.idxs[item]]
-        return x, item
-
-class DatasetSplitTwoCropsIdx(Dataset):
-    """An abstract Dataset class wrapped around Pytorch Dataset class.
-    """
-    def __init__(self, dataset, idxs):
-        self.dataset = dataset
-        self.idxs = [int(i) for i in idxs]
-
-    def __len__(self):
-        return len(self.idxs)
-
-    def __getitem__(self, item):
-        (x1, x2), _ = self.dataset[self.idxs[item]]
-        return x1, x2, item
 
 
 def local_update_weights(gpu, args, model, dataset, global_round, idxs, return_dict):
@@ -149,7 +98,6 @@ def local_update_weights(gpu, args, model, dataset, global_round, idxs, return_d
         torch.save(model.state_dict(), local_path)
 
     return_dict[gpu] = [model.cpu().state_dict(), epoch_loss]
-    # return model.state_dict(), sum(epoch_loss) / len(epoch_loss)
 
 
 def local_update_weights_supervised(gpu, args, model, dataset, testset, global_round, idxs, return_dict):
@@ -302,7 +250,6 @@ def local_update_weights_infer_on_public(gpu, args, model, dataset, pubset, pubi
         
     return_dict[gpu] = [model.cpu().state_dict(), epoch_loss, reps]
     # return_dict[gpu] = [model.cpu().state_dict(), 1, reps]
-
 
 def global_update_ERD(gpu, args, model, pubset, pubidxs, reps, return_dict):
     """

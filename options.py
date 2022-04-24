@@ -11,13 +11,13 @@ def args_parser():
     # federated arguments (Notation for the arguments followed from paper)
     parser.add_argument('--epochs', type=int, default=10,
                         help="number of rounds of training")
-    parser.add_argument('--num_users', type=int, default=100,
+    parser.add_argument('--num-users', type=int, default=6,
                         help="number of users: K")
     parser.add_argument('--frac', type=float, default=0.1,
                         help='the fraction of clients: C')
-    parser.add_argument('--local_ep', type=int, default=10,
+    parser.add_argument('--local-ep', type=int, default=10,
                         help="the number of local epochs: E")
-    parser.add_argument('--local_bs', type=int, default=10,
+    parser.add_argument('--local-bs', type=int, default=10,
                         help="local batch size: B")
     parser.add_argument('--lr', type=float, default=0.01,
                         help='learning rate')
@@ -36,47 +36,42 @@ def args_parser():
 
     # model arguments
     parser.add_argument('--model', type=str, default='mlp', help='model name')
-    parser.add_argument('--kernel_num', type=int, default=9,
-                        help='number of each kind of kernel')
-    parser.add_argument('--kernel_sizes', type=str, default='3,4,5',
-                        help='comma-separated kernel size to \
-                        use for convolution')
-    parser.add_argument('--num_channels', type=int, default=1, help="number \
-                        of channels of imgs")
-    parser.add_argument('--norm', type=str, default='batch_norm',
-                        help="batch_norm, layer_norm, or None")
-    parser.add_argument('--num_filters', type=int, default=32,
-                        help="number of filters for conv nets -- 32 for \
-                        mini-imagenet, 64 for omiglot.")
-    parser.add_argument('--max_pool', type=str, default='True',
-                        help="Whether use max pooling rather than \
-                        strided convolutions")
 
     # other arguments
-    parser.add_argument('--dataset', type=str, default='mnist', help="name \
+    parser.add_argument('--dataset', type=str, default='cifar10', help="name \
                         of dataset")
     parser.add_argument('--data-dir', type=str, default='~/data/cifar10', help="name \
                         of dataset")
-    parser.add_argument('--mlp_dim', type=int, default=128, help="number \
+    parser.add_argument('--train-mode', type=str, default='ssl', help=f"the mode of training, \
+                        currently support {['ssl', 'sup']}")
+    parser.add_argument('--mlp-dim', type=int, default=128, help="number \
                         of classes, originally. Now it's the mlp final dimension.")
-    parser.add_argument('--gpu', default=None, help="To use cuda, set \
-                        to a specific GPU ID. Default set to use CPU.")
+    parser.add_argument('--gpus', type=int, default=2, help="Number of GPUs to use.")
     parser.add_argument('--optimizer', type=str, default='sgd', help="type \
                         of optimizer")
     parser.add_argument('--dirichlet', type=str, default='1',
                         help='dirichlet alpha, str.')
-    parser.add_argument('--stopping_rounds', type=int, default=10,
-                        help='rounds of early stopping')
+    # parser.add_argument('--stopping_rounds', type=int, default=10,
+    #                     help='rounds of early stopping')
     parser.add_argument('--verbose', type=int, default=1, help='verbose')
     parser.add_argument('--seed', type=int, default=1, help='random seed')
+    parser.add_argument('--ind-file', type=str, default='stashed/noniid.json', help='the index file.')
+    parser.add_argument('-p', '--print-freq', default=10, type=int,
+                        metavar='N', help='global print frequency (default: 10)')
+    parser.add_argument('-lp', '--local-print-freq', default=10, type=int,
+                        metavar='N', help='local print frequency (default: 10)')
 
     # simclr setting
     parser.add_argument('--T', type=float, default=0.2,
                     help='temperature.')
-    parser.add_argument('--ckptdir', type=str, default='/raid/fedssl-checkpoints', help="name \
+    parser.add_argument('--ckptdir', type=str, default='checkpoints/tmp', help="name \
                 of the checkpoint directory")
     parser.add_argument('--mu', type=float, default=-1, 
                         help="fedprox setting. <0 disable and degenerate to fedavg.")
+
+    # global aggregation 
+    parser.add_argument('--global-agg', type=str, default='wa', help="type of global \
+                        aggregation: 'wa'=weight averaging, 'esd'=ensemble similarity distillation.")
 
     # flesd setting.
     parser.add_argument('--communication', type=str, default='sim-full', 
@@ -99,12 +94,10 @@ def args_parser():
                         help="the ERD learning rate for the global network.")
     parser.add_argument('--flesd-bs', type=int, default=256, 
                         help="the batch size of ensemble distillation")
-    parser.add_argument('--flesd-cl-weight', type=float, default=1., 
-                        help="how much the CL loss applies during distillation.")
-    parser.add_argument('--flesd-cl', action='store_true', 
-                        help="whether contrastive learning")
     parser.add_argument('--flesd-wd', type=float, default=1e-6, 
                         help="flesd weight decay.")
+    parser.add_argument('--flesd-percent', type=int, default=100, 
+                        help="percent of the top similarities to preserve in ESD.")
     parser.add_argument('--pubset', type=str, default='', 
                         help="if not set, then use the client[0]'s data as the public dataset \
                         for global aggregation. use dataset_name.percentage to indicate which and what fraction the public dataset to use.")

@@ -41,7 +41,7 @@ class Flesd(nn.Module):
             x = torch.randn([2,3,64,64])
         dim = self.encoder_k(x).shape[-1]
 
-        # create the queue and corresponding index. 
+        # create the queue and the corresponding index. 
         self.register_buffer("queue", torch.randn(dim, K))
         self.register_buffer("queue_idx", torch.zeros(K, dtype=torch.long))
         self.queue = nn.functional.normalize(self.queue, dim=0)

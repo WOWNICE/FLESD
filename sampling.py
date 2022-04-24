@@ -8,14 +8,18 @@ from torchvision import datasets, transforms
 import json
 
 
-def noniid(
-        ind_file='./noniid.json', 
+def read_inds(
+        ind_file='inds/noniid.json', 
         dataset_name='cifar10', 
-        data_path='/raid/CIFAR', 
+        data_path='/home/shz/data/cifar10', 
         client_num='6', 
         alpha='0.01', 
         generate_ifnonexist=False
     ):
+    """
+    helper function that readsthe provided index file.
+    return: indices of the data samples
+    """
     try:
         # read the json file
         with open(ind_file, 'r') as f:
@@ -44,7 +48,15 @@ def noniid(
     return inds_dist[key]
 
 
-def generate_noniid_inds(ind_file='./noniid.json', dataset_name='cifar10', data_path='/raid/CIFAR', client_num='6', alpha='0.01', min_prop=0.5, overwrite=False):
+def generate_noniid_inds(
+        ind_file='inds/noniid.json', 
+        dataset_name='cifar10', 
+        data_path='/home/shz/data/cifar10', 
+        client_num='6', 
+        alpha='0.01', 
+        min_prop=0.5, # minimal proportion of the data one client have compared to the average data.
+        overwrite=False
+    ):
     # if empty ind file, write a empty json file into the file location.
     if not os.path.exists(ind_file): 
         with open(ind_file, 'w') as f:
@@ -118,7 +130,20 @@ def generate_noniid_inds(ind_file='./noniid.json', dataset_name='cifar10', data_
     inds_dist[key] = dict_users
     with open(ind_file, 'w') as f:
         json.dump(inds_dist, f)
-    
+
+
+def get_user_groups(args):
+    """same function as read_inds"""
+    # sample training data amongst users
+    return read_inds(
+        ind_file=args.ind_file,
+        dataset_name=args.dataset,
+        data_path=args.data_dir,
+        client_num=str(args.num_users),
+        alpha=str(args.dirichlet),
+        generate_ifnonexist=args.gen_data_if_nonexist
+    )
+
 
 if __name__ == '__main__':
     for alpha in ['0.01', '0.1', '1', '10', '100']:
